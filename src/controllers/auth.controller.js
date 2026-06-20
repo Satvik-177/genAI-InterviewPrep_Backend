@@ -69,7 +69,7 @@ export const loginUserController = async(req, res) => {
             })
         }
 
-        const user = await userModel.findOne({ email })
+        const user = await userModel.findOne({ email }).select("+password")
 
         if(!user){
             return res.status(400).json({
@@ -102,6 +102,7 @@ export const loginUserController = async(req, res) => {
             }
         })
     } catch(err) {
+        console.log("Error in login: ",err)
         return res.status(500).json({ message: "Internal server error" })
     }
 }

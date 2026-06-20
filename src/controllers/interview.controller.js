@@ -10,8 +10,6 @@ async function generateInterViewReportController(req, res) {
 
         const { selfDescription, jobDescription } = req.body
 
-        console.log("req.body:", req.body)
-        console.log("req.file:", req.file)
 
         if(!jobDescription){
             return res.status(400).json({

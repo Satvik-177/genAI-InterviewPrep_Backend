@@ -6,7 +6,6 @@ export async function chatController(req, res) {
         const { interviewId } = req.params
         const { message, history } = req.body
 
-        // Report fetch karo
         const report = await interviewReportModel.findOne({
             _id: interviewId,
             user: req.user.id
@@ -17,8 +16,6 @@ export async function chatController(req, res) {
                 message: "Interview report not found"
             })
         }
-
-        // AI se answer lo
         const answer = await chatWithAI({
             report,
             message,
