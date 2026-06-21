@@ -1,4 +1,7 @@
 import dotenv from "dotenv"
+import { createRequire } from "module"
+const require = createRequire(import.meta.url)
+const htmlPdfNode = require("html-pdf-node")
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
 
@@ -81,26 +84,23 @@ export async function generateInterviewReport({ resume, selfDescription, jobDesc
 }
 
 async function generatePdfFromHtml(htmlContent) {
-    const browser = await chromium.launch({
-        args: chromium.args,
-        headless: true
-    })
-    try {
-        const page = await browser.newPage()
-        await page.setContent(htmlContent, { waitUntil: "networkidle" })
-        const pdfBuffer = await page.pdf({
-            format: "A4",
-            margin: {
-                top: "20mm",
-                bottom: "20mm",
-                left: "15mm",
-                right: "15mm"
-            }
-        })
-        return pdfBuffer
-    } finally {
-        await browser.close()
+    const file = { content: htmlContent }
+    const options = {
+        format: "A4",
+        margin: {
+            top: "20mm",
+            bottom: "20mm",
+            left: "15mm",
+            right: "15mm"
+        }
     }
+
+    return new Promise((resolve, reject) => {
+        htmlPdfNode.generatePdf(file, options, (err, buffer) => {
+            if(err) reject(err)
+            else resolve(buffer)
+        })
+    })
 }
 
 export async function generateResumePdf({ resume, selfDescription, jobDescription }) {
