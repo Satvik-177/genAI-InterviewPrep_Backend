@@ -6,7 +6,7 @@ import tokenBlacklistModel from "../models/blacklist.model.js"
 const cookieOptions = {
     httpOnly: true,
     secure: true,
-    sameSite: "none",  // ← "strict" se "none" karo
+    sameSite: "none",
     maxAge: 24 * 60 * 60 * 1000
 }
 

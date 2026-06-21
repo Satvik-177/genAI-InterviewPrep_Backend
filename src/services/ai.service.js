@@ -81,10 +81,13 @@ export async function generateInterviewReport({ resume, selfDescription, jobDesc
 }
 
 async function generatePdfFromHtml(htmlContent) {
-    const browser = await chromium.launch()
+    const browser = await chromium.launch({
+        args: chromium.args,
+        headless: true
+    })
     try {
         const page = await browser.newPage()
-        await page.setContent(htmlContent, { waitUntil: "networkidle0" })
+        await page.setContent(htmlContent, { waitUntil: "networkidle" })
         const pdfBuffer = await page.pdf({
             format: "A4",
             margin: {
@@ -159,9 +162,11 @@ export async function chatWithAI({ report, message, history }) {
         ]
 
         const response = await groq.chat.completions.create({
-            model: "llama-3.3-70b-versatile",
-            messages
-        })
+    model: "llama-3.3-70b-versatile",
+    messages: messages,
+    response_format: { type: "json_object" },
+    temperature: 0.3  
+})
 
         return response.choices[0].message.content
 
