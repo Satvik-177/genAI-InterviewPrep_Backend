@@ -5,9 +5,9 @@ import tokenBlacklistModel from "../models/blacklist.model.js"
 
 const cookieOptions = {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
-    maxAge: 24 * 60 * 60 * 1000  // 1 day
+    secure: true,
+    sameSite: "none",  // ← "strict" se "none" karo
+    maxAge: 24 * 60 * 60 * 1000
 }
 
 export const userRegisterController = async(req, res) => {
