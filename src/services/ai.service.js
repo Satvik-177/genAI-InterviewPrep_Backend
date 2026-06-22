@@ -1,16 +1,13 @@
 import dotenv from "dotenv"
-import { createRequire } from "module"
-const require = createRequire(import.meta.url)
-const htmlPdfNode = require("html-pdf-node")
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
+import Groq from "groq-sdk"
+import { jsPDF } from "jspdf"
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
 dotenv.config({ path: join(__dirname, '../../.env') })
-
-import Groq from "groq-sdk"
 
 const groq = new Groq({
     apiKey: process.env.GROQ_API_KEY
@@ -84,23 +81,29 @@ export async function generateInterviewReport({ resume, selfDescription, jobDesc
 }
 
 async function generatePdfFromHtml(htmlContent) {
-    const file = { content: htmlContent }
-    const options = {
-        format: "A4",
-        margin: {
-            top: "20mm",
-            bottom: "20mm",
-            left: "15mm",
-            right: "15mm"
-        }
-    }
+    const doc = new jsPDF()
 
-    return new Promise((resolve, reject) => {
-        htmlPdfNode.generatePdf(file, options, (err, buffer) => {
-            if(err) reject(err)
-            else resolve(buffer)
-        })
-    })
+    const plainText = htmlContent
+        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+        .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+        .replace(/<h1[^>]*>(.*?)<\/h1>/gi, "\n$1\n")
+        .replace(/<h2[^>]*>(.*?)<\/h2>/gi, "\n$1\n")
+        .replace(/<h3[^>]*>(.*?)<\/h3>/gi, "\n$1\n")
+        .replace(/<li[^>]*>(.*?)<\/li>/gi, "• $1\n")
+        .replace(/<br\s*\/?>/gi, "\n")
+        .replace(/<p[^>]*>(.*?)<\/p>/gi, "$1\n")
+        .replace(/<[^>]*>/g, "")
+        .replace(/&amp;/g, "&")
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">")
+        .replace(/&nbsp;/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+
+    doc.setFontSize(11)
+    doc.text(plainText, 15, 15, { maxWidth: 180 })
+
+    return Buffer.from(doc.output('arraybuffer'))
 }
 
 export async function generateResumePdf({ resume, selfDescription, jobDescription }) {
