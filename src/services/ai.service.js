@@ -107,26 +107,45 @@ async function generatePdfFromHtml(htmlContent) {
 }
 
 export async function generateResumePdf({ resume, selfDescription, jobDescription }) {
-    const prompt = `Generate a professional resume for:
-    Resume: ${resume}
-    Self Description: ${selfDescription}
-    Job Description: ${jobDescription}
-    
-    Return a JSON object with exactly this field:
-    {
-        "html": "complete HTML string for the resume"
-    }
-    
-    The resume should be well formatted, ATS friendly, and professional.
-    Return ONLY the JSON object, no extra text.`
-
     try {
         const response = await groq.chat.completions.create({
             model: "llama-3.3-70b-versatile",
             messages: [
                 {
                     role: "user",
-                    content: prompt
+                    content: `Generate a professional resume in HTML format for:
+                    Resume: ${resume}
+                    Self Description: ${selfDescription}
+                    Job Description: ${jobDescription}
+                    
+                    Return a JSON object: { "html": "complete HTML string" }
+                    
+                    The HTML must include:
+                    - Inline CSS styling (no external stylesheets)
+                    - Professional font: Arial, sans-serif
+                    - Clear sections: Summary, Experience, Skills, Projects, Education
+                    - Name as large heading at top
+                    - Contact info in one line
+                    - Section headings with border-bottom
+                    - Bullet points for experience
+                    - Clean white background
+                    - Black text
+                    - Proper margins and padding
+                    - ATS friendly format
+                    - Max 2 pages
+                    
+                    Example structure:
+                    <html>
+                    <body style="font-family: Arial, sans-serif; margin: 40px; color: #000;">
+                    <h1 style="font-size: 24px; margin-bottom: 4px;">John Doe</h1>
+                    <p style="font-size: 12px; color: #555;">email | phone | linkedin</p>
+                    <hr/>
+                    <h2 style="font-size: 14px; border-bottom: 1px solid #000;">EXPERIENCE</h2>
+                    ...
+                    </body>
+                    </html>
+                    
+                    Return ONLY the JSON object, no extra text.`
                 }
             ],
             response_format: { type: "json_object" },
@@ -134,12 +153,10 @@ export async function generateResumePdf({ resume, selfDescription, jobDescriptio
         })
 
         const text = response.choices[0].message.content
-        const jsonContent = JSON.parse(text)
-        return await generatePdfFromHtml(jsonContent.html)
+        return JSON.parse(text)
 
     } catch(err) {
-        console.error("Groq error:", err)
-        throw new Error(`Failed to generate resume PDF: ${err.message}`)
+        throw new Error(`Failed to generate resume: ${err.message}`)
     }
 }
 
