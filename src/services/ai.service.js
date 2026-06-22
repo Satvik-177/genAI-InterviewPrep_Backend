@@ -11,7 +11,6 @@ const __dirname = dirname(__filename)
 dotenv.config({ path: join(__dirname, '../../.env') })
 
 import Groq from "groq-sdk"
-import { chromium } from "playwright"
 
 const groq = new Groq({
     apiKey: process.env.GROQ_API_KEY
@@ -71,7 +70,8 @@ export async function generateInterviewReport({ resume, selfDescription, jobDesc
                     content: prompt
                 }
             ],
-            response_format: { type: "json_object" }
+            response_format: { type: "json_object" },
+            temperature: 0.3
         })
 
         const text = response.choices[0].message.content
@@ -126,7 +126,8 @@ export async function generateResumePdf({ resume, selfDescription, jobDescriptio
                     content: prompt
                 }
             ],
-            response_format: { type: "json_object" }
+            response_format: { type: "json_object" },
+            temperature: 0.3
         })
 
         const text = response.choices[0].message.content
@@ -162,11 +163,10 @@ export async function chatWithAI({ report, message, history }) {
         ]
 
         const response = await groq.chat.completions.create({
-    model: "llama-3.3-70b-versatile",
-    messages: messages,
-    response_format: { type: "json_object" },
-    temperature: 0.3  
-})
+            model: "llama-3.3-70b-versatile",
+            messages: messages,
+            temperature: 0.3
+        })
 
         return response.choices[0].message.content
 
