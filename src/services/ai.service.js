@@ -100,8 +100,9 @@ async function generatePdfFromHtml(htmlContent) {
         .replace(/\s+/g, " ")
         .trim()
 
+    const lines = doc.splitTextToSize(plainText, 180)
     doc.setFontSize(11)
-    doc.text(plainText, 15, 15, { maxWidth: 180 })
+    doc.text(lines, 15, 15)
 
     return Buffer.from(doc.output('arraybuffer'))
 }
