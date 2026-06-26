@@ -2,7 +2,7 @@ import dotenv from "dotenv"
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
 import Groq from "groq-sdk"
-import { jsPDF } from "jspdf"
+import PDFDocument from "pdfkit"
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -81,30 +81,22 @@ export async function generateInterviewReport({ resume, selfDescription, jobDesc
 }
 
 async function generatePdfFromHtml(htmlContent) {
-    const doc = new jsPDF()
+    return new Promise((resolve, reject) => {
+        const doc = new PDFDocument({ margin: 50 })
+        const chunks = []
 
-    const plainText = htmlContent
-        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
-        .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
-        .replace(/<h1[^>]*>(.*?)<\/h1>/gi, "\n$1\n")
-        .replace(/<h2[^>]*>(.*?)<\/h2>/gi, "\n$1\n")
-        .replace(/<h3[^>]*>(.*?)<\/h3>/gi, "\n$1\n")
-        .replace(/<li[^>]*>(.*?)<\/li>/gi, "• $1\n")
-        .replace(/<br\s*\/?>/gi, "\n")
-        .replace(/<p[^>]*>(.*?)<\/p>/gi, "$1\n")
-        .replace(/<[^>]*>/g, "")
-        .replace(/&amp;/g, "&")
-        .replace(/&lt;/g, "<")
-        .replace(/&gt;/g, ">")
-        .replace(/&nbsp;/g, " ")
-        .replace(/\s+/g, " ")
-        .trim()
+        doc.on('data', chunk => chunks.push(chunk))
+        doc.on('end', () => resolve(Buffer.concat(chunks)))
+        doc.on('error', reject)
 
-    const lines = doc.splitTextToSize(plainText, 180)
-    doc.setFontSize(11)
-    doc.text(lines, 15, 15)
+        const plainText = htmlContent
+            .replace(/<[^>]*>/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim()
 
-    return Buffer.from(doc.output('arraybuffer'))
+        doc.fontSize(11).text(plainText, { align: 'left' })
+        doc.end()
+    })
 }
 
 export async function generateResumePdf({ resume, selfDescription, jobDescription }) {
