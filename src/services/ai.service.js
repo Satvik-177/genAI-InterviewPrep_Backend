@@ -2,7 +2,7 @@ import dotenv from "dotenv"
 import { fileURLToPath } from 'url'
 import { dirname, join } from 'path'
 import Groq from "groq-sdk"
-import PDFDocument from "pdfkit"
+import htmlPdf from "html-pdf-node"
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -80,23 +80,18 @@ export async function generateInterviewReport({ resume, selfDescription, jobDesc
     }
 }
 
+
 async function generatePdfFromHtml(htmlContent) {
     return new Promise((resolve, reject) => {
-        const doc = new PDFDocument({ margin: 50 })
-        const chunks = []
+        let options = { format: 'A4', margin: { top: "40px", bottom: "40px", left: "40px", right: "40px" } };
+        let file = { content: htmlContent };
 
-        doc.on('data', chunk => chunks.push(chunk))
-        doc.on('end', () => resolve(Buffer.concat(chunks)))
-        doc.on('error', reject)
-
-        const plainText = htmlContent
-            .replace(/<[^>]*>/g, ' ')
-            .replace(/\s+/g, ' ')
-            .trim()
-
-        doc.fontSize(11).text(plainText, { align: 'left' })
-        doc.end()
-    })
+        htmlPdf.generatePdf(file, options).then(pdfBuffer => {
+            resolve(pdfBuffer);
+        }).catch(err => {
+            reject(err);
+        });
+    });
 }
 
 export async function generateResumePdf({ resume, selfDescription, jobDescription }) {
@@ -145,8 +140,14 @@ export async function generateResumePdf({ resume, selfDescription, jobDescriptio
             temperature: 0.3
         })
 
-        const text = response.choices[0].message.content
-        return JSON.parse(text)
+        const text = response.choices[0].message.content;
+        const jsonResult = JSON.parse(text);
+        
+        
+        const pdfBuffer = await generatePdfFromHtml(jsonResult.html);
+        
+        
+        return pdfBuffer;
 
     } catch(err) {
         throw new Error(`Failed to generate resume: ${err.message}`)

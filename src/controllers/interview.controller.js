@@ -7,9 +7,7 @@ import interviewReportModel from "../models/interviewReport.model.js"
 
 async function generateInterViewReportController(req, res) {
     try {
-
         const { selfDescription, jobDescription } = req.body
-
 
         if(!jobDescription){
             return res.status(400).json({
@@ -100,6 +98,7 @@ async function generateResumePdfController(req, res) {
     try {
         const { interviewReportId } = req.params
 
+        // Fetch report from database
         const interviewReport = await interviewReportModel.findOne({
             _id: interviewReportId,
             user: req.user.id
@@ -113,21 +112,33 @@ async function generateResumePdfController(req, res) {
 
         const { resume, jobDescription, selfDescription } = interviewReport
 
+        // Generate the PDF binary buffer using the updated AI service
         const pdfBuffer = await generateResumePdf({
             resume,
             jobDescription,
             selfDescription
         })
 
-        res.set({
-            "Content-Type": "application/pdf",
-            "Content-Disposition": `attachment; filename=resume_${interviewReportId}.pdf`
-        })
+        // Verify if the buffer is valid before setting headers to prevent corrupt streams
+        if (!pdfBuffer || !Buffer.isBuffer(pdfBuffer)) {
+            throw new Error("Failed to generate a valid PDF buffer")
+        }
 
+        // Explicitly set headers for file transfer
+        res.setHeader("Content-Type", "application/pdf")
+        res.setHeader("Content-Disposition", `attachment; filename=resume_${interviewReportId}.pdf`)
+        res.setHeader("Content-Length", pdfBuffer.length)
+
+        // Stream the binary buffer data directly to the client
         return res.send(pdfBuffer)
+        
     } catch(err) {
-        console.error("Error:", err)
-        return res.status(500).json({ message: "Internal server error" })
+        console.error("Error in generateResumePdfController:", err)
+        
+        // Return JSON error only if headers haven't been transmitted yet
+        if (!res.headersSent) {
+            return res.status(500).json({ message: err.message || "Internal server error" })
+        }
     }
 }
 
